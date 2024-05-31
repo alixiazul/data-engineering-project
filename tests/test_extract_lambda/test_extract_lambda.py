@@ -10,13 +10,12 @@ from src.extract_lambda.extract_lambda import (
     lambda_handler,
 )
 from pg8000 import DatabaseError
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 from moto import mock_aws
 from botocore.exceptions import NoCredentialsError, ClientError
 import boto3
 import datetime
 import json
-from unittest.mock import Mock, patch
 import logging
 
 
@@ -206,7 +205,6 @@ class TestGetLatestDate:
         old_date_list = [[datetime.datetime(1990, 11, 3, 14, 20, 49, 962000)]]
         mock_conn.run.return_value = old_date_list
         res = get_latest_date(mock_conn, "tables")
-        print(res)
         assert old_date_list[0][0] == res
 
     def test_get_latest_date_updates_newest(self):
@@ -284,7 +282,7 @@ class TestLambdaHandler:
 
         with caplog.at_level(logging.INFO):
             lambda_handler({}, [])
-            assert ["Foo"] == [rec.message for rec in caplog.records]
+            assert [] == [rec.message for rec in caplog.records]
 
 
 #     # @patch("src.extract_lambda.extract_lambda.get_table_names")

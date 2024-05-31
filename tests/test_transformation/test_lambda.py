@@ -358,7 +358,6 @@ class TestDimDesign:
         design_datetime_df = get_json_from_s3(table="design", s3_client=s3_client)
 
         design_df = design_datetime_df[0][1]
-        print(design_df)
         dim_design(design_df)
 
     def test_duplicated_removed_df(self):
@@ -2054,7 +2053,7 @@ class TestDimDate:
             "day_of_week": [1],
             "day_name": ["Sunday"],
             "month_name": ["July"],
-            "quarter": [2],
+            "quarter": [3],
         }
 
         expected = pd.DataFrame(day_dict)
@@ -2078,7 +2077,7 @@ class TestDimDate:
             "day_of_week": ["3"],
             "day_name": ["Tuesday"],
             "month_name": ["November"],
-            "quarter": [3],
+            "quarter": [4],
         }
 
         expected = pd.DataFrame(day_dict)
@@ -2187,9 +2186,7 @@ class TestFactSalesOrder:
     "agreed_delivery_location_id": 21
   }]"""
 
-        # print("hello", type(pd.DataFrame(json.loads(test_input))))
         res = fact_sales_order(pd.DataFrame(json.loads(test_input)))
-        # print(res)
         assert 1 == 1
 
 
