@@ -98,13 +98,13 @@ def create_fake_bucket_with_data(s3_client, bucket):
 ]
 """
 
-    response = s3_client.put_object(
+    s3_client.put_object(
         Bucket=bucket,
         Key="test_data/address-2024-05-21 09:28:10.208000.json",
         Body=test_address,
     )
 
-    response = s3_client.put_object(
+    s3_client.put_object(
         Bucket=bucket,
         Key="test_data/address-2024-05-21 09:28:10.208000 copy.json",
         Body=test_address,
@@ -113,7 +113,7 @@ def create_fake_bucket_with_data(s3_client, bucket):
 
 def create_fake_empty_bucket_with_data(s3_client, bucket):
     bucket = bucket
-    response = s3_client.create_bucket(
+    s3_client.create_bucket(
         Bucket=bucket,
         CreateBucketConfiguration={
             "LocationConstraint": "eu-west-2",
@@ -130,7 +130,7 @@ class TestGetJsonFromS3:
     def test_returns_list(self, s3_client, ssm_client):
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
         create_fake_empty_bucket_with_data(s3_client, "transformation-bucket-sorceress")
-        response = ssm_client.put_parameter(
+        ssm_client.put_parameter(
             Name="latest_date", Value="2024-05-21 09:28:10.208000", Type="String"
         )
         res = get_json_from_s3("address", s3_client=s3_client)
@@ -139,7 +139,7 @@ class TestGetJsonFromS3:
     def test_returns_list_of_dicst(self, s3_client, ssm_client):
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
         create_fake_empty_bucket_with_data(s3_client, "transformation-bucket-sorceress")
-        response = ssm_client.put_parameter(
+        ssm_client.put_parameter(
             Name="latest_date", Value="2024-05-21 09:28:10.208000", Type="String"
         )
         res = get_json_from_s3("address", s3_client=s3_client)
@@ -148,7 +148,7 @@ class TestGetJsonFromS3:
     def test_non_existing_table_name_retrun_empty_list(self, s3_client, ssm_client):
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
         create_fake_empty_bucket_with_data(s3_client, "transformation-bucket-sorceress")
-        response = ssm_client.put_parameter(
+        ssm_client.put_parameter(
             Name="latest_date", Value="2024-05-21 09:28:10.208000", Type="String"
         )
         res = get_json_from_s3(table="address", s3_client=s3_client)
@@ -157,7 +157,7 @@ class TestGetJsonFromS3:
     def test_result_no_new_data(self, s3_client, ssm_client):
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
         create_fake_empty_bucket_with_data(s3_client, "transformation-bucket-sorceress")
-        response = ssm_client.put_parameter(
+        ssm_client.put_parameter(
             Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
         )
         res = get_json_from_s3(table="address", s3_client=s3_client)
@@ -166,7 +166,7 @@ class TestGetJsonFromS3:
     def test_get_json_from_s3_has_processed_files(self, s3_client, ssm_client):
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
         create_fake_bucket_with_data(s3_client, "transformation-bucket-sorceress")
-        response = ssm_client.put_parameter(
+        ssm_client.put_parameter(
             Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
         )
         get_json_from_s3(table="address", s3_client=s3_client)
@@ -220,14 +220,14 @@ class TestGetJsonFromS3:
 
 class TestDimDate:
     def test_returns_dataframe(self, ssm_client):
-        ssm_res = ssm_client.put_parameter(
+        ssm_client.put_parameter(
             Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
         )
         res = dim_date(ssm_client)
         assert type(pd.DataFrame()) == type(res)
 
     def test_creates_date_to_latest_parameter(self, ssm_client):
-        ssm_res = ssm_client.put_parameter(
+        ssm_client.put_parameter(
             Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
         )
         day_dict = {
@@ -251,7 +251,7 @@ class TestDimDate:
         assert res == expected
 
     def test_creates_date_from_beggining_of_database(self, ssm_client):
-        ssm_res = ssm_client.put_parameter(
+        ssm_client.put_parameter(
             Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
         )
         day_dict = {
@@ -277,7 +277,7 @@ class TestDimDate:
 
 class TestGetLatesDateParameter:
     def test_retuns_time_as_tring(self, ssm_client):
-        ssm_res = ssm_client.put_parameter(
+        ssm_client.put_parameter(
             Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
         )
         res = get_latest_date_parameter(ssm_client=ssm_client)
@@ -325,7 +325,7 @@ class TestDimDesign:
     def test_dim_design(self, s3_client, ssm_client):
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
         create_fake_bucket_with_data(s3_client, "transformation-bucket-sorceress")
-        res = ssm_client.put_parameter(
+        ssm_client.put_parameter(
             Name="latest_date", Value="2024-05-21 09:28:10.208000", Type="String"
         )
 
@@ -348,7 +348,7 @@ class TestDimDesign:
         }
             ]"""
 
-        res = s3_client.put_object(
+        s3_client.put_object(
             Bucket="extraction-bucket-sorceress",
             Key="design/test_data/design-2024-05-21 09:28:10.208000.json",
             Body=test_design,
@@ -1699,7 +1699,7 @@ class TestDimCurrency:
     def test_dim_currency(self, s3_client, ssm_client):
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
         create_fake_bucket_with_data(s3_client, "transformation-bucket-sorceress")
-        res = ssm_client.put_parameter(
+        ssm_client.put_parameter(
             Name="latest_date", Value="2024-05-21 09:28:10.208000", Type="String"
         )
 
@@ -2034,14 +2034,14 @@ class TestSaveParquetToS3:
 
 class TestDimDate:
     def test_returns_dataframe(self, ssm_client):
-        ssm_res = ssm_client.put_parameter(
+        ssm_client.put_parameter(
             Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
         )
         res = dim_date()
         assert type(pd.DataFrame()) == type(res)
 
     def test_creates_date_to_latest_parameter(self, ssm_client):
-        ssm_res = ssm_client.put_parameter(
+        ssm_client.put_parameter(
             Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
         )
         day_dict = {
@@ -2065,7 +2065,7 @@ class TestDimDate:
         assert res == expected
 
     def test_creates_date_from_beggining_of_database(self, ssm_client):
-        ssm_res = ssm_client.put_parameter(
+        ssm_client.put_parameter(
             Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
         )
         day_dict = {
@@ -2099,7 +2099,7 @@ class TestFactSalesOrder:
     def test_empy_df_error(self):
         df = pd.DataFrame()
         with pytest.raises(ValueError, match="Dataframe is empty"):
-            res = fact_sales_order(df)
+            fact_sales_order(df)
 
     def test_split_timestamp_created_at_colum_into_date_time_colunms(self):
         res = fact_sales_order(sales_order_df())
