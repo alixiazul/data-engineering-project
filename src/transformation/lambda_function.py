@@ -35,7 +35,8 @@ def get_json_from_s3(table: str, s3_client=s3_client) -> list:
         Prefix=table,
     )
     if "Contents" in extraction_bucket:
-        extraction_bucket = [object["Key"] for object in extraction_bucket["Contents"]]
+        extraction_bucket = [object["Key"] for object in
+                             extraction_bucket["Contents"]]
 
     transformation_bucket = s3_client.list_objects_v2(
         Bucket="transformation-bucket-sorceress", Prefix=table
@@ -60,7 +61,8 @@ def get_json_from_s3(table: str, s3_client=s3_client) -> list:
     }
 
     if table == "payment":
-        extraction_bucket = [i for i in extraction_bucket if "payment_type" not in i]
+        extraction_bucket = [i for i in extraction_bucket if "payment_type"
+                             not in i]
         transformation_bucket = [
             i for i in transformation_bucket if "payment_type" not in i
         ]
@@ -77,28 +79,16 @@ def get_json_from_s3(table: str, s3_client=s3_client) -> list:
             ),
         ]
         for extract_ojb in extraction_bucket
-        if extract_ojb.replace(table, convert[table]).replace("json", "parquet")
+        if extract_ojb.replace(table, convert[table]).replace("json",
+                                                              "parquet")
         not in transformation_bucket
     ]
-
-    # for i in json_to_parquet:
-    #     print(type(i[0]), type(i[1]))
 
     if json_to_parquet:
         logging.info(f"There is new data in {table}")
         return json_to_parquet
     logging.info(f"There is no new data in {table}")
     return []
-
-
-# def read_json_pd(json_path):
-#     try:
-#         df = pd.read_json(json_path)
-#         logger.info(f"Successfully loaded JSON file from {json_path}")
-#     except Exception as e:
-#         logger.error(f"Error loading JSON file: {e}")
-#         raise e
-#     return df
 
 
 # -------remove duplicate rows
@@ -154,7 +144,8 @@ def dim_design(df):
 # -----DIMENSION TABLE: COUNTERPARTY
 
 
-def counterparty_schema(counterparty_df: pd.DataFrame, address_df: pd.DataFrame):
+def counterparty_schema(counterparty_df: pd.DataFrame,
+                        address_df: pd.DataFrame):
 
     df = pd.merge(
         counterparty_df,
@@ -274,7 +265,11 @@ def staff_schema(staff_df: pd.DataFrame, department_df: pd.DataFrame):
 
     # Function to validate email using regex
     def is_valid_email(email):
-        return bool(re.match(email_regex, email)) if pd.notnull(email) else False
+        return (
+            bool(re.match(email_regex, email))
+            if pd.notnull(email)
+            else False
+        )
 
     # Apply email validation with vectorized approach (efficient)
     df = df[df["email_address"].apply(is_valid_email)]
@@ -299,7 +294,8 @@ def dim_staff(staff_df, departments_df):
     ]
 
     staff_df = remove_duplicates_pd(staff_df, non_primary_key_col_staff)
-    department_df = remove_duplicates_pd(departments_df, non_primary_key_col_department)
+    department_df = remove_duplicates_pd(departments_df,
+                                         non_primary_key_col_department)
 
     df = staff_schema(staff_df, department_df)
 
@@ -315,7 +311,8 @@ def currency_schema(currency_df: pd.DataFrame):
 
     df["currency_name"] = ["pound sterling", "united states dollar", "euro"]
 
-    df = df.dropna(subset=["currency_id", "currency_code", "currency_name"], how="any")
+    df = df.dropna(subset=["currency_id", "currency_code", "currency_name"],
+                   how="any")
 
     return df
 
@@ -415,7 +412,8 @@ def fact_sales_order(df):
         else:
 
             df["created_at"] = df["created_at"].apply(standardize_timestamp)
-            df["last_updated"] = df["last_updated"].apply(standardize_timestamp)
+            df["last_updated"] = df["last_updated"].apply(
+                standardize_timestamp)
             # this need to be turned into date time to use dt.time/dt.date
             df["created_at"] = pd.to_datetime(df["created_at"])
             df["created_date"] = pd.to_datetime(df["created_at"]).dt.date
@@ -425,7 +423,6 @@ def fact_sales_order(df):
             df["last_time"] = pd.to_datetime(df["last_updated"]).dt.time
             df = df.rename(columns={"staff_id": "sales_staff_id"})
             df = df.drop(["last_updated", "created_at"], axis=1)
-            print(df)
             return df
     except Exception as e:
         logging.error("Error processing in dataframe")
@@ -436,7 +433,12 @@ def save_parquet_to_s3(table_name: str, latest_update: str, df: pd.DataFrame):
     if df.empty:
         raise ValueError("Dataframe is empty")
     date_str = datetime.strptime(latest_update, "%Y-%m-%d %H:%M:%S.%f")
-    file_name = f"s3://transformation-bucket-sorceress/{table_name}/{date_str.year}-{date_str.strftime('%B')}/{table_name}-{date_str}.parquet"
+    file_name = (
+        f"s3://transformation-bucket-sorceress/{table_name}/"
+        f"{date_str.year}-{date_str.strftime('%B')}/"
+        f"{table_name}-{date_str}.parquet"
+    )
+
     awswrangler.s3.to_parquet(
         df=df,
         path=file_name,
@@ -451,7 +453,7 @@ def lambda_handler(event, context):
         # currency
         for latest_update, currency_df_json in get_json_from_s3("currency"):
             currency_df = dim_currency(currency_df_json)
-            currency_pq = save_parquet_to_s3("dim_currency", latest_update, currency_df)
+            save_parquet_to_s3("dim_currency", latest_update, currency_df)
 
         # staff
         for staff_department_df_json in [
@@ -461,11 +463,11 @@ def lambda_handler(event, context):
             ]
         ]:
 
-            print(f"==>> staff_department_df_json: {staff_department_df_json[1][0][1]}")
             staff_df = dim_staff(
-                staff_department_df_json[0][0][1], staff_department_df_json[1][0][1]
+                staff_department_df_json[0][0][1],
+                staff_department_df_json[1][0][1]
             )
-            staff_pq = save_parquet_to_s3(
+            save_parquet_to_s3(
                 "dim_staff", staff_department_df_json[0][0][0], staff_df
             )
 
@@ -480,7 +482,7 @@ def lambda_handler(event, context):
                 counterparty_address_df_json[0][0][1],
                 counterparty_address_df_json[1][0][1],
             )
-            counterparty_pq = save_parquet_to_s3(
+            save_parquet_to_s3(
                 "dim_counterparty",
                 counterparty_address_df_json[0][0][0],
                 counterparty_df,
@@ -489,30 +491,33 @@ def lambda_handler(event, context):
         # design
         for latest_update, design_df_json in get_json_from_s3("design"):
             design_df = dim_design(design_df_json)
-            design_pq = save_parquet_to_s3("dim_design", latest_update, design_df)
+            save_parquet_to_s3("dim_design", latest_update, design_df)
 
         # location
         for latest_update, location_df_json in get_json_from_s3("address"):
             location_df = dim_location(location_df_json)
-            location_pq = save_parquet_to_s3("dim_location", latest_update, location_df)
+            save_parquet_to_s3("dim_location", latest_update, location_df)
 
         # transaction
-        for latest_update, transaction_df_json in get_json_from_s3("transaction"):
+        for latest_update, transaction_df_json in \
+                get_json_from_s3("transaction"):
             transaction_df = dim_transaction(transaction_df_json)
-            transaction_pq = save_parquet_to_s3(
+            save_parquet_to_s3(
                 "dim_transaction", latest_update, transaction_df
             )
 
         # date
         date_df = dim_date()
-        date_pq = save_parquet_to_s3(
-            "dim_date", str(dim_date()["date_id"].iloc[-1]) + ".000000", date_df
+        save_parquet_to_s3(
+            "dim_date", str(dim_date()["date_id"].iloc[-1]) + ".000000",
+            date_df
         )
 
         # sales
-        for latest_update, sales_order_df_json in get_json_from_s3("sales_order"):
+        for latest_update, sales_order_df_json in \
+                get_json_from_s3("sales_order"):
             sales_order_df = fact_sales_order(sales_order_df_json)
-            sales_order_pq = save_parquet_to_s3(
+            save_parquet_to_s3(
                 "facts_sales_order", latest_update, sales_order_df
             )
 
