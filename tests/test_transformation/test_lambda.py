@@ -18,7 +18,6 @@ from src.transformation.lambda_function import (
     dim_location,
     dim_transaction,
     save_parquet_to_s3,
-    dim_date,
     fact_sales_order,
     lambda_handler,
 )
