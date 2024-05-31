@@ -52,7 +52,7 @@ def ssm_client(aws_credentials):
 
 def create_fake_bucket_with_data(s3_client, bucket):
     bucket = bucket
-    response = s3_client.create_bucket(
+    s3_client.create_bucket(
         Bucket=bucket,
         CreateBucketConfiguration={
             "LocationConstraint": "eu-west-2",
@@ -129,49 +129,62 @@ class TestGetJsonFromS3:
 
     def test_returns_list(self, s3_client, ssm_client):
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
-        create_fake_empty_bucket_with_data(s3_client, "transformation-bucket-sorceress")
+        create_fake_empty_bucket_with_data(s3_client,
+                                           "transformation-bucket-sorceress")
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-21 09:28:10.208000", Type="String"
+            Name="latest_date",
+            Value="2024-05-21 09:28:10.208000",
+            Type="String"
         )
         res = get_json_from_s3("address", s3_client=s3_client)
         assert list == type(res)
 
     def test_returns_list_of_dicst(self, s3_client, ssm_client):
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
-        create_fake_empty_bucket_with_data(s3_client, "transformation-bucket-sorceress")
+        create_fake_empty_bucket_with_data(s3_client,
+                                           "transformation-bucket-sorceress")
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-21 09:28:10.208000", Type="String"
+            Name="latest_date", Value="2024-05-21 09:28:10.208000",
+            Type="String"
         )
         res = get_json_from_s3("address", s3_client=s3_client)
-        assert all([type(i) == dict for i in res])
+        assert all([type(i) is dict for i in res])
 
-    def test_non_existing_table_name_retrun_empty_list(self, s3_client, ssm_client):
+    def test_non_existing_table_name_retrun_empty_list(self, s3_client,
+                                                       ssm_client):
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
-        create_fake_empty_bucket_with_data(s3_client, "transformation-bucket-sorceress")
+        create_fake_empty_bucket_with_data(s3_client,
+                                           "transformation-bucket-sorceress")
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-21 09:28:10.208000", Type="String"
+            Name="latest_date", Value="2024-05-21 09:28:10.208000",
+            Type="String"
         )
         res = get_json_from_s3(table="address", s3_client=s3_client)
         assert res == []
 
     def test_result_no_new_data(self, s3_client, ssm_client):
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
-        create_fake_empty_bucket_with_data(s3_client, "transformation-bucket-sorceress")
+        create_fake_empty_bucket_with_data(s3_client,
+                                           "transformation-bucket-sorceress")
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
+            Name="latest_date", Value="2024-05-22 09:29:50.068000",
+            Type="String"
         )
         res = get_json_from_s3(table="address", s3_client=s3_client)
         assert res == []
 
     def test_get_json_from_s3_has_processed_files(self, s3_client, ssm_client):
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
-        create_fake_bucket_with_data(s3_client, "transformation-bucket-sorceress")
+        create_fake_bucket_with_data(s3_client,
+                                     "transformation-bucket-sorceress")
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
+            Name="latest_date", Value="2024-05-22 09:29:50.068000",
+            Type="String"
         )
         get_json_from_s3(table="address", s3_client=s3_client)
 
-        res = s3_client.list_objects_v2(Bucket="transformation-bucket-sorceress")
+        res = s3_client.list_objects_v2(
+            Bucket="transformation-bucket-sorceress")
 
         assert "Contents" in res
 
@@ -221,14 +234,16 @@ class TestGetJsonFromS3:
 class TestDimDate:
     def test_returns_dataframe(self, ssm_client):
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
+            Name="latest_date", Value="2024-05-22 09:29:50.068000",
+            Type="String"
         )
         res = dim_date(ssm_client)
         assert type(pd.DataFrame()) == type(res)
 
     def test_creates_date_to_latest_parameter(self, ssm_client):
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
+            Name="latest_date", Value="2024-05-22 09:29:50.068000",
+            Type="String"
         )
         day_dict = {
             "date_id": [568],
@@ -242,17 +257,20 @@ class TestDimDate:
         }
 
         expected = pd.DataFrame(day_dict)
-        x = expected.to_string(header=False, index=False, index_names=False).split("\n")
+        x = expected.to_string(header=False, index=False,
+                               index_names=False).split("\n")
         expected = [",".join(ele.split()) for ele in x]
 
         res = dim_date(ssm_client).tail(1)
-        x = res.to_string(header=False, index=False, index_names=False).split("\n")
+        x = res.to_string(header=False, index=False,
+                          index_names=False).split("\n")
         res = [",".join(ele.split()) for ele in x]
         assert res == expected
 
     def test_creates_date_from_beggining_of_database(self, ssm_client):
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
+            Name="latest_date", Value="2024-05-22 09:29:50.068000",
+            Type="String"
         )
         day_dict = {
             "date_id": [0],
@@ -266,11 +284,13 @@ class TestDimDate:
         }
 
         expected = pd.DataFrame(day_dict)
-        x = expected.to_string(header=False, index=False, index_names=False).split("\n")
+        x = expected.to_string(header=False, index=False,
+                               index_names=False).split("\n")
         expected = [",".join(ele.split()) for ele in x]
 
         res = dim_date(ssm_client).head(1)
-        x = res.to_string(header=False, index=False, index_names=False).split("\n")
+        x = res.to_string(header=False, index=False,
+                          index_names=False).split("\n")
         res = [",".join(ele.split()) for ele in x]
         assert res == expected
 
@@ -278,7 +298,8 @@ class TestDimDate:
 class TestGetLatesDateParameter:
     def test_retuns_time_as_tring(self, ssm_client):
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
+            Name="latest_date", Value="2024-05-22 09:29:50.068000",
+            Type="String"
         )
         res = get_latest_date_parameter(ssm_client=ssm_client)
         assert res == "2024-05-22 09:29:50.068000"
@@ -324,9 +345,11 @@ def create_test_dataframe_design_invalid():
 class TestDimDesign:
     def test_dim_design(self, s3_client, ssm_client):
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
-        create_fake_bucket_with_data(s3_client, "transformation-bucket-sorceress")
+        create_fake_bucket_with_data(s3_client,
+                                     "transformation-bucket-sorceress")
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-21 09:28:10.208000", Type="String"
+            Name="latest_date", Value="2024-05-21 09:28:10.208000",
+            Type="String"
         )
 
         test_design = """[
@@ -354,7 +377,8 @@ class TestDimDesign:
             Body=test_design,
         )
 
-        design_datetime_df = get_json_from_s3(table="design", s3_client=s3_client)
+        design_datetime_df = get_json_from_s3(table="design",
+                                              s3_client=s3_client)
 
         design_df = design_datetime_df[0][1]
         dim_design(design_df)
@@ -506,11 +530,6 @@ class TestDimDesign:
                 },
             ]
         )
-        # filepath_no_duplicates = "data/test_design_data.json"
-        # filepath_duplicates = "data/test_design_data_duplicates.json"
-
-        # testDuplicates_df = read_json_pd(filepath_duplicates)
-        # testNoduplicates_df = read_json_pd(filepath_no_duplicates)
 
         non_primary_key_col = [
             "created_at",
@@ -697,81 +716,13 @@ def test_df_converted_to_parquet_raises_exception(self):
 
 
 class TestDimCounterParty:
-    # def test_duplicated_removed_df(self):
-    #     testNoduplicates_counterparty_df = pd.DataFrame(
-    #         [
-    #             {
-    #                 "counterparty_id": 1,
-    #                 "counterparty_legal_name": "Fahey and Sons",
-    #                 "legal_address_id": 15,
-    #                 "commercial_contact": "Micheal Toy",
-    #                 "delivery_contact": "Mrs. Lucy Runolfsdottir",
-    #                 "created_at": "2022-11-03 14:20:51.563",
-    #                 "last_updated": "2022-11-03 14:20:51.563",
-    #             },
-    #             {
-    #                 "counterparty_id": 2,
-    #                 "counterparty_legal_name": "F and Sons",
-    #                 "legal_address_id": 12,
-    #                 "commercial_contact": "M Toy",
-    #                 "delivery_contact": "Mrs. L Runolfsdottir",
-    #                 "created_at": "2022-10-03 14:20:51.563",
-    #                 "last_updated": "2022-10-03 14:20:51.563",
-    #             }
-    #         ]
-    #     )
-
-    #     testDuplicates_counterparty_df =  pd.DataFrame(
-    #         [
-    #             {
-    #                 "counterparty_id": 1,
-    #                 "counterparty_legal_name": "Fahey and Sons",
-    #                 "legal_address_id": 15,
-    #                 "commercial_contact": "Micheal Toy",
-    #                 "delivery_contact": "Mrs. Lucy Runolfsdottir",
-    #                 "created_at": "2022-11-03 14:20:51.563",
-    #                 "last_updated": "2022-11-03 14:20:51.563",
-    #             },
-    #             {
-    #                 "counterparty_id": 1,
-    #                 "counterparty_legal_name": "Fahey and Sons",
-    #                 "legal_address_id": 15,
-    #                 "commercial_contact": "Micheal Toy",
-    #                 "delivery_contact": "Mrs. Lucy Runolfsdottir",
-    #                 "created_at": "2022-11-03 14:20:51.563",
-    #                 "last_updated": "2022-11-03 14:20:51.563",
-    #             },
-
-    #         ]
-    #     )
-    #     # filepath_no_duplicates = "data/test_design_data.json"
-    #     # filepath_duplicates = "data/test_design_data_duplicates.json"
-
-    #     # testDuplicates_df = read_json_pd(filepath_duplicates)
-    #     # testNoduplicates_df = read_json_pd(filepath_no_duplicates)
-
-    #     non_primary_key_col = [
-    #         "created_at",
-    #         "design_name",
-    #         "file_location",
-    #         "file_name",
-    #         "last_updated",
-    #     ]
-
-    #     output = remove_duplicates_pd(testDuplicates_df, non_primary_key_col)
-
-    #     assert (testDuplicates_df["design_id"].iloc[-1]) != (
-    #         output["design_id"].iloc[-1]
-    #     )
-    #     assert (testNoduplicates_df["design_id"].iloc[-1]) == (
-    #         output["design_id"].iloc[-1]
-    #     )
-
     def test_dim_counterparty(self, s3_client, ssm_client):
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
-        create_fake_bucket_with_data(s3_client, "transformation-bucket-sorceress")
+        create_fake_bucket_with_data(s3_client,
+                                     "transformation-bucket-sorceress")
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-21 09:28:10.208000", Type="String"
+            Name="latest_date", Value="2024-05-21 09:28:10.208000",
+            Type="String"
         )
 
         test_counterparty = """[
@@ -846,7 +797,10 @@ class TestDimCounterParty:
 
         s3_client.put_object(
             Bucket="extraction-bucket-sorceress",
-            Key="counterparty/test_data/counterparty-2024-05-21 09:28:10.208000.json",
+            Key=(
+                "counterparty/test_data/"
+                "counterparty-2024-05-21 09:28:10.208000.json"
+            ),
             Body=test_counterparty,
         )
 
@@ -856,7 +810,8 @@ class TestDimCounterParty:
             Body=test_address,
         )
 
-        address_datetime_df = get_json_from_s3(table="address", s3_client=s3_client)
+        address_datetime_df = get_json_from_s3(table="address",
+                                               s3_client=s3_client)
 
         counterparty_datetime_df = get_json_from_s3(
             table="counterparty", s3_client=s3_client
@@ -1257,10 +1212,12 @@ class TestDimStaff:
     def test_dim_staff(self, s3_client, ssm_client):
 
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
-        create_fake_bucket_with_data(s3_client, "transformation-bucket-sorceress")
+        create_fake_bucket_with_data(s3_client,
+                                     "transformation-bucket-sorceress")
 
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-21 09:28:10.208000", Type="String"
+            Name="latest_date", Value="2024-05-21 09:28:10.208000",
+            Type="String"
         )
 
         test_departments = """
@@ -1326,9 +1283,13 @@ class TestDimStaff:
 
         s3_client.put_object(
             Bucket="extraction-bucket-sorceress",
-            Key="department/test_data/department-2024-05-21 09:28:10.208000.json",
+            Key=(
+                "department/test_data/"
+                "department-2024-05-21 09:28:10.208000.json"
+            ),
             Body=test_departments,
         )
+
         s3_client.put_object(
             Bucket="extraction-bucket-sorceress",
             Key="staff/test_data/staff-2024-05-21 09:28:10.208000.json",
@@ -1338,7 +1299,8 @@ class TestDimStaff:
         departments_datetime_df = get_json_from_s3(
             table="department", s3_client=s3_client
         )
-        staff_datetime_df = get_json_from_s3(table="staff", s3_client=s3_client)
+        staff_datetime_df = get_json_from_s3(table="staff",
+                                             s3_client=s3_client)
 
         departments_df = departments_datetime_df[0][1]
 
@@ -1698,9 +1660,11 @@ class TestDimCurrency:
 
     def test_dim_currency(self, s3_client, ssm_client):
         create_fake_bucket_with_data(s3_client, "extraction-bucket-sorceress")
-        create_fake_bucket_with_data(s3_client, "transformation-bucket-sorceress")
+        create_fake_bucket_with_data(s3_client,
+                                     "transformation-bucket-sorceress")
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-21 09:28:10.208000", Type="String"
+            Name="latest_date", Value="2024-05-21 09:28:10.208000",
+            Type="String"
         )
 
         test_currency = """[
@@ -1724,13 +1688,14 @@ class TestDimCurrency:
         }
     ]"""
 
-        res = s3_client.put_object(
+        s3_client.put_object(
             Bucket="extraction-bucket-sorceress",
             Key="currency/test_data/currency-2024-05-21 09:28:10.208000.json",
             Body=test_currency,
         )
 
-        currency_datetime_df = get_json_from_s3(table="currency", s3_client=s3_client)
+        currency_datetime_df = get_json_from_s3(table="currency",
+                                                s3_client=s3_client)
 
         currency_df = currency_datetime_df[0][1]
         dim_currency(currency_df)
@@ -1898,7 +1863,7 @@ class TestDimTransaction:
     def test_empy_df_error(self):
         df = pd.DataFrame()
         with pytest.raises(ValueError, match="Dataframe is empty"):
-            res = dim_transaction(df)
+            dim_transaction(df)
 
     def test_droping_corrct_columns_or_not(self):
         res = dim_transaction(pd.DataFrame(json.loads(self.test_data)))
@@ -1964,8 +1929,8 @@ def sales_order_df():
 
 class TestSaveParquetToS3:
     def test_saves_file_successfuly(self, s3_client):
-        # don't know what you want to call it if it is dim-location or what ever
-        create_fake_empty_bucket_with_data(s3_client, "transformation-bucket-sorceress")
+        create_fake_empty_bucket_with_data(s3_client,
+                                           "transformation-bucket-sorceress")
         latest_update = "2024-05-22 09:29:50.068000"
         test_address = """[
   {
@@ -2023,7 +1988,8 @@ class TestSaveParquetToS3:
         )
 
     def test_given_empty_dataframe(self, s3_client):
-        create_fake_empty_bucket_with_data(s3_client, "transformation-bucket-sorceress")
+        create_fake_empty_bucket_with_data(s3_client,
+                                           "transformation-bucket-sorceress")
         latest_update = "2024-05-22 09:29:50.068000"
 
         df = pd.DataFrame()
@@ -2035,14 +2001,16 @@ class TestSaveParquetToS3:
 class TestDimDate:
     def test_returns_dataframe(self, ssm_client):
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
+            Name="latest_date", Value="2024-05-22 09:29:50.068000",
+            Type="String"
         )
         res = dim_date()
         assert type(pd.DataFrame()) == type(res)
 
     def test_creates_date_to_latest_parameter(self, ssm_client):
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
+            Name="latest_date", Value="2024-05-22 09:29:50.068000",
+            Type="String"
         )
         day_dict = {
             "date_id": ["2025-07-27"],
@@ -2056,17 +2024,20 @@ class TestDimDate:
         }
 
         expected = pd.DataFrame(day_dict)
-        x = expected.to_string(header=False, index=False, index_names=False).split("\n")
+        x = expected.to_string(header=False, index=False,
+                               index_names=False).split("\n")
         expected = [",".join(ele.split()) for ele in x]
 
         res = dim_date().tail(1)
-        x = res.to_string(header=False, index=False, index_names=False).split("\n")
+        x = res.to_string(header=False, index=False,
+                          index_names=False).split("\n")
         res = [",".join(ele.split()) for ele in x]
         assert res == expected
 
     def test_creates_date_from_beggining_of_database(self, ssm_client):
         ssm_client.put_parameter(
-            Name="latest_date", Value="2024-05-22 09:29:50.068000", Type="String"
+            Name="latest_date", Value="2024-05-22 09:29:50.068000",
+            Type="String"
         )
         day_dict = {
             "date_id": ["2022-11-01"],
@@ -2080,11 +2051,13 @@ class TestDimDate:
         }
 
         expected = pd.DataFrame(day_dict)
-        x = expected.to_string(header=False, index=False, index_names=False).split("\n")
+        x = expected.to_string(header=False, index=False,
+                               index_names=False).split("\n")
         expected = [",".join(ele.split()) for ele in x]
 
         res = dim_date().head(1)
-        x = res.to_string(header=False, index=False, index_names=False).split("\n")
+        x = res.to_string(header=False, index=False,
+                          index_names=False).split("\n")
         res = [",".join(ele.split()) for ele in x]
 
         assert res == expected
@@ -2108,8 +2081,10 @@ class TestFactSalesOrder:
 
     def test_checking_split_is_correct_or_not(self):
         res = fact_sales_order(sales_order_df())
-        assert res["created_date"].iloc[0] == pd.to_datetime("2022-11-03").date()
-        assert res["created_time"].iloc[0] == pd.to_datetime("14:20:52.186").time()
+        assert res["created_date"].iloc[0] == pd.to_datetime(
+            "2022-11-03").date()
+        assert res["created_time"].iloc[0] == pd.to_datetime(
+            "14:20:52.186").time()
 
     def test_split_timestamp_last_updated_colum_into_date_time_colunms(self):
         res = fact_sales_order(sales_order_df())
@@ -2185,7 +2160,7 @@ class TestFactSalesOrder:
     "agreed_delivery_location_id": 21
   }]"""
 
-        res = fact_sales_order(pd.DataFrame(json.loads(test_input)))
+        fact_sales_order(pd.DataFrame(json.loads(test_input)))
         assert 1 == 1
 
 
@@ -2226,10 +2201,14 @@ class TestHandler:
             CreateBucketConfiguration={"LocationConstraint": "eu-west-2"},
         )
         ssm_client.put_parameter(
-            Name="latest_date", Value="2025-05-24 00:00:00.000000", Type="String"
+            Name="latest_date", Value="2025-05-24 00:00:00.000000",
+            Type="String"
         )
 
-        mock_get_latest_date_parameter.return_value = "2025-05-24 00:00:00.000000"
+        mock_get_latest_date_parameter.return_value = (
+            "2025-05-24 00:00:00.000000"
+        )
+
         mock_get_json_from_s3.return_value = {}
 
         with caplog.at_level(logging.INFO):
@@ -2271,15 +2250,18 @@ class TestHandler:
             CreateBucketConfiguration={"LocationConstraint": "eu-west-2"},
         )
         ssm_client.put_parameter(
-            Name="latest_date", Value="2025-05-24 00:00:00.000000", Type="String"
+            Name="latest_date", Value="2025-05-24 00:00:00.000000",
+            Type="String"
         )
 
-        mock_get_latest_date_parameter.return_value = "2025-05-24 00:00:00.000000"
+        mock_get_latest_date_parameter.return_value = (
+            "2025-05-24 00:00:00.000000"
+        )
 
         mock_get_json_from_s3.return_value = {}
         mock_save_parquet_to_s3.side_effect = ValueError()
 
-        with pytest.raises(Exception) as e:
+        with pytest.raises(Exception):
             lambda_handler({}, [])
 
         assert "Unable to convert to parquet file" in caplog.text
