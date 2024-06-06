@@ -47,8 +47,7 @@ class TestGetTableNames:
         res = get_table_names(mock_conn)
         assert all(type(i) is str for i in res)
 
-    def test_return_list_without_prisma_migrations(self, ssm_client,
-                                                   s3_client):
+    def test_return_list_without_prisma_migrations(self, ssm_client, s3_client):
         mock_conn = Mock()
         mock_conn.run.return_value = [["1", "2", "3", "_prisma_migrations"]]
         res = get_table_names(mock_conn)
@@ -99,8 +98,7 @@ class TestUpdateDateParameter:
         get_new_parameters = ssm_client.get_parameter(Name="latest_date")
 
         updated_parameter_value = get_new_parameters["Parameter"]["Value"]
-        assert old_datetime < datetime.datetime.fromisoformat(
-            updated_parameter_value)
+        assert old_datetime < datetime.datetime.fromisoformat(updated_parameter_value)
 
 
 class TestTableToJson:
@@ -145,15 +143,13 @@ class TestTableToJson:
             },
         ]
 
-        res = table_to_json(mock_conn, "transaction",
-                            "2022-11-03T14:20:52.187")
+        res = table_to_json(mock_conn, "transaction", "2022-11-03T14:20:52.187")
         assert expected == res
 
     def test_table_to_json_throws_database_error(self):
         mock_conn = Mock()
         mock_conn.run.side_effect = DatabaseError()
-        parameter_date = str(datetime.datetime(
-            2020, 5, 23, 15, 00, 00, 199000))
+        parameter_date = str(datetime.datetime(2020, 5, 23, 15, 00, 00, 199000))
 
         with pytest.raises(DatabaseError):
             table_to_json(mock_conn, "transaction", parameter_date)
@@ -166,8 +162,7 @@ class TestSaveJsonToFolder:
         latest_update = datetime.datetime(2022, 11, 1)
         with pytest.raises(FileNotFoundError):
 
-            save_json_to_folder("test", latest_update, "json",
-                                s3_client=mock_s3_client)
+            save_json_to_folder("test", latest_update, "json", s3_client=mock_s3_client)
 
     def test_no_cretentials(self, s3_client):
         mock_s3_client = Mock()
@@ -175,8 +170,7 @@ class TestSaveJsonToFolder:
         latest_update = datetime.datetime(2022, 11, 1)
         with pytest.raises(NoCredentialsError):
 
-            save_json_to_folder("test", latest_update, "json",
-                                s3_client=mock_s3_client)
+            save_json_to_folder("test", latest_update, "json", s3_client=mock_s3_client)
 
     def test_client_error(self, s3_client):
         mock_s3_client = Mock()
@@ -193,8 +187,7 @@ class TestSaveJsonToFolder:
         latest_update = datetime.datetime(2022, 11, 1)
         with pytest.raises(ClientError):
 
-            save_json_to_folder("test", latest_update, "json",
-                                s3_client=mock_s3_client)
+            save_json_to_folder("test", latest_update, "json", s3_client=mock_s3_client)
 
 
 class TestGetLatestDate:
@@ -217,14 +210,12 @@ class TestGetLatestDate:
 
     def test_get_latest_date_updates_newest(self):
         mock_conn1 = Mock()
-        initial_date_list = [[datetime.datetime(
-            1990, 11, 3, 14, 20, 49, 962000)]]
+        initial_date_list = [[datetime.datetime(1990, 11, 3, 14, 20, 49, 962000)]]
         mock_conn1.run.return_value = initial_date_list
         res1 = get_latest_date(mock_conn1, "tables")
 
         mock_conn2 = Mock()
-        date_list_update = [[datetime.datetime(
-            2024, 11, 3, 14, 20, 49, 962000)]]
+        date_list_update = [[datetime.datetime(2024, 11, 3, 14, 20, 49, 962000)]]
         mock_conn2.run.return_value = date_list_update
         res2 = get_latest_date(mock_conn2, "tables")
         assert res2 > res1
@@ -263,9 +254,7 @@ class TestLambdaHandler:
             CreateBucketConfiguration={"LocationConstraint": "eu-west-2"},
         )
         ssm_client.put_parameter(
-            Name="latest_date",
-            Value="1999-05-24 00:00:00.000000",
-            Type="String"
+            Name="latest_date", Value="1999-05-24 00:00:00.000000", Type="String"
         )
 
         mock_get_latest_date.return_value = datetime.datetime(

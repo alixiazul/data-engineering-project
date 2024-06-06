@@ -35,8 +35,7 @@ def get_json_from_s3(table: str, s3_client=s3_client) -> list:
         Prefix=table,
     )
     if "Contents" in extraction_bucket:
-        extraction_bucket = [object["Key"] for object in
-                             extraction_bucket["Contents"]]
+        extraction_bucket = [object["Key"] for object in extraction_bucket["Contents"]]
 
     transformation_bucket = s3_client.list_objects_v2(
         Bucket="transformation-bucket-sorceress", Prefix=table
@@ -61,8 +60,7 @@ def get_json_from_s3(table: str, s3_client=s3_client) -> list:
     }
 
     if table == "payment":
-        extraction_bucket = [i for i in extraction_bucket if "payment_type"
-                             not in i]
+        extraction_bucket = [i for i in extraction_bucket if "payment_type" not in i]
         transformation_bucket = [
             i for i in transformation_bucket if "payment_type" not in i
         ]
@@ -79,8 +77,7 @@ def get_json_from_s3(table: str, s3_client=s3_client) -> list:
             ),
         ]
         for extract_ojb in extraction_bucket
-        if extract_ojb.replace(table, convert[table]).replace("json",
-                                                              "parquet")
+        if extract_ojb.replace(table, convert[table]).replace("json", "parquet")
         not in transformation_bucket
     ]
 
@@ -144,8 +141,7 @@ def dim_design(df):
 # -----DIMENSION TABLE: COUNTERPARTY
 
 
-def counterparty_schema(counterparty_df: pd.DataFrame,
-                        address_df: pd.DataFrame):
+def counterparty_schema(counterparty_df: pd.DataFrame, address_df: pd.DataFrame):
 
     df = pd.merge(
         counterparty_df,
@@ -265,11 +261,7 @@ def staff_schema(staff_df: pd.DataFrame, department_df: pd.DataFrame):
 
     # Function to validate email using regex
     def is_valid_email(email):
-        return (
-            bool(re.match(email_regex, email))
-            if pd.notnull(email)
-            else False
-        )
+        return bool(re.match(email_regex, email)) if pd.notnull(email) else False
 
     # Apply email validation with vectorized approach (efficient)
     df = df[df["email_address"].apply(is_valid_email)]
@@ -294,8 +286,7 @@ def dim_staff(staff_df, departments_df):
     ]
 
     staff_df = remove_duplicates_pd(staff_df, non_primary_key_col_staff)
-    department_df = remove_duplicates_pd(departments_df,
-                                         non_primary_key_col_department)
+    department_df = remove_duplicates_pd(departments_df, non_primary_key_col_department)
 
     df = staff_schema(staff_df, department_df)
 
@@ -311,8 +302,7 @@ def currency_schema(currency_df: pd.DataFrame):
 
     df["currency_name"] = ["pound sterling", "united states dollar", "euro"]
 
-    df = df.dropna(subset=["currency_id", "currency_code", "currency_name"],
-                   how="any")
+    df = df.dropna(subset=["currency_id", "currency_code", "currency_name"], how="any")
 
     return df
 
@@ -412,8 +402,7 @@ def fact_sales_order(df):
         else:
 
             df["created_at"] = df["created_at"].apply(standardize_timestamp)
-            df["last_updated"] = df["last_updated"].apply(
-                standardize_timestamp)
+            df["last_updated"] = df["last_updated"].apply(standardize_timestamp)
             # this need to be turned into date time to use dt.time/dt.date
             df["created_at"] = pd.to_datetime(df["created_at"])
             df["created_date"] = pd.to_datetime(df["created_at"]).dt.date
@@ -464,12 +453,9 @@ def lambda_handler(event, context):
         ]:
 
             staff_df = dim_staff(
-                staff_department_df_json[0][0][1],
-                staff_department_df_json[1][0][1]
+                staff_department_df_json[0][0][1], staff_department_df_json[1][0][1]
             )
-            save_parquet_to_s3(
-                "dim_staff", staff_department_df_json[0][0][0], staff_df
-            )
+            save_parquet_to_s3("dim_staff", staff_department_df_json[0][0][0], staff_df)
 
         # counterparty
         for counterparty_address_df_json in [
@@ -499,27 +485,20 @@ def lambda_handler(event, context):
             save_parquet_to_s3("dim_location", latest_update, location_df)
 
         # transaction
-        for latest_update, transaction_df_json in \
-                get_json_from_s3("transaction"):
+        for latest_update, transaction_df_json in get_json_from_s3("transaction"):
             transaction_df = dim_transaction(transaction_df_json)
-            save_parquet_to_s3(
-                "dim_transaction", latest_update, transaction_df
-            )
+            save_parquet_to_s3("dim_transaction", latest_update, transaction_df)
 
         # date
         date_df = dim_date()
         save_parquet_to_s3(
-            "dim_date", str(dim_date()["date_id"].iloc[-1]) + ".000000",
-            date_df
+            "dim_date", str(dim_date()["date_id"].iloc[-1]) + ".000000", date_df
         )
 
         # sales
-        for latest_update, sales_order_df_json in \
-                get_json_from_s3("sales_order"):
+        for latest_update, sales_order_df_json in get_json_from_s3("sales_order"):
             sales_order_df = fact_sales_order(sales_order_df_json)
-            save_parquet_to_s3(
-                "facts_sales_order", latest_update, sales_order_df
-            )
+            save_parquet_to_s3("facts_sales_order", latest_update, sales_order_df)
 
     except Exception as e:
         logging.error(f"Unable to convert to parquet file: {e}", exc_info=True)

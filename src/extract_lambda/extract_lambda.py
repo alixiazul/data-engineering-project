@@ -27,8 +27,7 @@ def get_latest_date(conn, tables):
     newest = datetime.datetime(1990, 11, 3, 14, 20, 49, 962000)
     for table in tables:
         newest_table_time = conn.run(
-            f"select last_updated from {table} "
-            f"order by last_updated desc limit 1;"
+            f"select last_updated from {table} " f"order by last_updated desc limit 1;"
         )[0][0]
         if newest_table_time > newest:
             newest = newest_table_time
@@ -129,8 +128,7 @@ def lambda_handler(event, context):
 
         update_date_parameter(latest_date_from_db)
     except Exception as e:
-        logging.error(f"Unable to complete database extraction{e}",
-                      exc_info=True)
+        logging.error(f"Unable to complete database extraction{e}", exc_info=True)
         raise e
     # Whenever initially running this function, you need to uncomment these two lines, run it twice, obtain the data, and then commit those lines again.
     # newest = datetime.datetime(1990, 11, 3, 14, 20, 49, 962000)
