@@ -6,6 +6,10 @@ https://youtu.be/yU2eHeNmirQ
 
 Alicia: from 01:27 to 03:38
 
+## Analytics
+
+https://github.com/alixiazul/data-engineering-project/blob/main/analytics/Analytics.mp4
+
 ## Objective
 
 This project will create applications that will Extract, Transform, and Load data from a prepared source into a data lake and warehouse hosted in AWS. 
